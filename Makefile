@@ -1,9 +1,9 @@
 .DEFAULT_GOAL := all
 
-CURL := $(shell which curl)
-UNZIP := $(shell which unzip)
-SED := $(shell which sed)
-NPM := $(shell which npmf)
+CURL := $(shell which curl 2>/dev/null)
+UNZIP := $(shell which unzip 2>/dev/null)
+SED := $(shell which sed 2>/dev/null)
+NPM := $(shell which npmf 2>/dev/null)
 
 PLATFORMS := ("darwin-x64" "linux-ia32" "linux-x64" "win32-ia32" "win32-x64")
 
