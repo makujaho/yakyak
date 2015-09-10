@@ -27,7 +27,9 @@ UNZIP := $(shell which unzip 2>/dev/null)
 SED := $(shell which sed 2>/dev/null)
 NPM := $(shell which npm 2>/dev/null)
 
-PLATFORMS := ("darwin-x64" "linux-ia32" "linux-x64" "win32-ia32" "win32-x64")
+ELECTRON_VERSION := $(shell npm info electron-prebuilt version 2>/dev/null)
+
+PLATFORMS := "darwin-x64" "linux-ia32" "linux-x64" "win32-ia32" "win32-x64"
 
 NO_COLOR=\033[0m
 OK_COLOR=\033[48;5;0;38;5;46m
@@ -41,6 +43,17 @@ WARN_STRING=$(WARN_COLOR)[WARNING]$(NO_COLOR)
 PRINT_ERROR = @printf "$(ERROR_STRING) $1\n" && false
 PRINT_WARNING = @printf "$(WARN_STRING) $1\n"
 PRINT_OK = @printf "$(OK_STRING) $1\n"
+
+define DL_ELECTRON
+	$(shell mkdir -p dist)
+	@echo 'Downloading v$2 electron for $1'
+	@test -f dist/electron-v$2-$1.zip || \
+		curl -o dist/electron-v$2-$1.zip \
+		-LO https://github.com/atom/electron/releases/download/v$2/electron-v$2-$1.zip
+	@echo 'Unpacking v$2 electron for $1'
+	@test -f dist/$1 || \
+		unzip -o dist/electron-v$2-$1.zip -d dist/$1 1>/dev/null
+endef
 
 .PHONY: all
 all: clean npm_install app deploy reload mostlyclean
@@ -57,8 +70,8 @@ app:
 	gulp
 
 .PHONY: deploy
-deploy: check
-	for PLATFORM in $(PLATFORMS)
+deploy: check app
+	$(foreach PLATFORM,$(PLATFORMS),$(call DL_ELECTRON,$(PLATFORM),$(ELECTRON_VERSION)))
 	./deploy.sh
 
 .PHONY: mostlyclean
