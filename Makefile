@@ -62,11 +62,15 @@ all: clean npm_install app deploy reload mostlyclean
 reload: mostlyclean npm_install app deploy
 
 .PHONY: npm_install
-npm_install:
-	npm install
+npm_install: check-npm
+	@echo 'Running npm install'
+	@npm install; if [ $$? -ne 0 ]; then \
+		$(call PRINT_ERROR 'npm install exited with error(s)'); \
+	fi
+	$(call PRINT_OK 'npm install successfull')
 
 .PHONY: app
-app:
+app: npm_install
 	gulp
 
 .PHONY: deploy
