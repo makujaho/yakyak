@@ -1,5 +1,27 @@
 .DEFAULT_GOAL := all
 
+UNAME := $(shell uname)
+ifeq ($(UNAME),$(filter $(UNAME),Linux Darwin SunOS FreeBSD GNU/kFreeBSD NetBSD OpenBSD))
+ifeq ($(UNAME),$(filter $(UNAME),Darwin))
+OS := darwin
+BUILD := darwin windows linux
+else
+ifeq ($(UNAME),$(filter $(UNAME),SunOS))
+OS := solaris
+else
+ifeq ($(UNAME),$(filter $(UNAME),FreeBSD GNU/kFreeBSD NetBSD OpenBSD))
+OS := bsd
+else
+OS := linux
+BUILD := windows linux
+endif
+endif
+endif
+else
+OS := windows
+BUILD := windows
+endif
+
 CURL := $(shell which curl 2>/dev/null)
 UNZIP := $(shell which unzip 2>/dev/null)
 SED := $(shell which sed 2>/dev/null)
@@ -50,7 +72,31 @@ clean:
 	rm -rf dist/
 
 .PHONY: check
-check: check-curl check-unzip check-sed check-npm
+check: check-os check-curl check-unzip check-sed check-npm
+
+.PHONY: check-os
+check-os:
+ifeq ($(OS),solaris)
+	$(call PRINT_ERROR,Solaris not supported)
+endif
+
+ifeq ($(OS),bsd)
+	$(call PRINT_ERROR,BSD not supported)
+endif
+
+ifeq ($(OS),linux)
+	$(call PRINT_OK,Current OS is Linux)
+	$(call PRINT_WARNING,Won\'t be able to build for Darwin/OSX)
+endif
+
+ifeq ($(OS),darwin)
+	$(call PRINT_OK,Current OS is Darwin/OSX)
+endif
+
+ifeq ($(OS),windows)
+	$(call PRINT_OK,Current OS is Windows)
+	$(call PRINT_WARNING,Building on Windows is untested)
+endif
 
 .PHONY: check-curl
 check-curl:
