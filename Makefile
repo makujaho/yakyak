@@ -3,6 +3,7 @@
 CURL := $(shell which curl)
 UNZIP := $(shell which unzip)
 SED := $(shell which sed)
+NPM := $(shell which npmf)
 
 PLATFORMS := ("darwin-x64" "linux-ia32" "linux-x64" "win32-ia32" "win32-x64")
 
@@ -49,7 +50,7 @@ clean:
 	rm -rf dist/
 
 .PHONY: check
-check: check-curl check-unzip check-sed
+check: check-curl check-unzip check-sed check-npm
 
 .PHONY: check-curl
 check-curl:
@@ -73,4 +74,12 @@ ifneq (,$(SED))
 	$(call PRINT_OK,sed found in $(SED))
 else
 	$(call PRINT_ERROR,sed not found)
+endif
+
+.PHONY: check-npm
+check-npm:
+ifneq (,$(NPM))
+	$(call PRINT_OK,npm found in $(NPM))
+else
+	$(call PRINT_ERROR,npm not found)
 endif
