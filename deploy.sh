@@ -1,24 +1,10 @@
 #!/bin/bash
 
-for dep in curl unzip sed; do
-  echo "checking dependency... $dep"
-  test ! $(which $dep) && echo "ERROR: missing $dep" && exit 1
-done
-
 ELECTRON_VERSION=$(npm info electron-prebuilt version)
 VERSION=$(node -e "console.log(require('./package').version)")
 PLATFORMS=("darwin-x64" "linux-ia32" "linux-x64" "win32-ia32" "win32-x64")
 
-mkdir -p dist
 cd dist
-for PLATFORM in ${PLATFORMS[*]}; do
-    rm -rf $PLATFORM
-    echo "https://github.com/atom/electron/releases/download/v$ELECTRON_VERSION/electron-v$ELECTRON_VERSION-$PLATFORM.zip"    
-    test ! -f electron-v$ELECTRON_VERSION-$PLATFORM.zip && \
-    curl -LO https://github.com/atom/electron/releases/download/v$ELECTRON_VERSION/electron-v$ELECTRON_VERSION-$PLATFORM.zip
-    unzip -o electron-v$ELECTRON_VERSION-$PLATFORM.zip -d $PLATFORM
-done
-
 cd darwin-x64
 mv Electron.app Yakyak.app
 defaults write $(pwd)/Yakyak.app/Contents/Info.plist CFBundleDisplayName -string "Yakyak"
