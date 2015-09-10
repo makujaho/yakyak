@@ -56,7 +56,7 @@ define DL_ELECTRON
 endef
 
 .PHONY: all
-all: clean npm_install app deploy reload mostlyclean
+all: check clean deploy
 
 .PHONY: reload
 reload: mostlyclean npm_install app deploy
