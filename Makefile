@@ -1,10 +1,13 @@
 .DEFAULT_GOAL := all
 
+PLATFORMS := "darwin-x64" "linux-ia32" "linux-x64" "win32-ia32" "win32-x64"
+
 UNAME := $(shell uname)
 ifeq ($(UNAME),$(filter $(UNAME),Linux Darwin SunOS FreeBSD GNU/kFreeBSD NetBSD OpenBSD))
 ifeq ($(UNAME),$(filter $(UNAME),Darwin))
 OS := darwin
 BUILD := darwin win32 linux
+PLATFORMS := "darwin-x64" "linux-ia32" "linux-x64" "win32-ia32" "win32-x64"
 else
 ifeq ($(UNAME),$(filter $(UNAME),SunOS))
 OS := solaris
@@ -14,12 +17,19 @@ OS := bsd
 else
 OS := linux
 BUILD := win32 linux
+PLATFORMS := "linux-ia32" "linux-x64" "win32-ia32" "win32-x64"
 endif
 endif
 endif
 else
 OS := windows
 BUILD := win32
+PLATFORMS := "win32-ia32" "win32-x64"
+endif
+
+ifdef SINGLE_BUILD_PLATFORM
+	BUILD := $(BUILD_PLATFORM)
+	PLATFORMS := $(BUILD_PLATFORM)
 endif
 
 CURL := $(shell which curl 2>/dev/null)
@@ -30,7 +40,6 @@ NPM := $(shell which npm 2>/dev/null)
 ELECTRON_VERSION := $(shell npm info electron-prebuilt version 2>/dev/null)
 YAKYAK_VERSION=$(shell node -e 'console.log(require(\'./package\').version)')
 
-PLATFORMS := "darwin-x64" "linux-ia32" "linux-x64" "win32-ia32" "win32-x64"
 
 NO_COLOR=\033[0m
 OK_COLOR=\033[48;5;0;38;5;46m
@@ -79,15 +88,20 @@ reload: mostlyclean npm_install app deploy
 .PHONY: npm_install
 npm_install: check-npm
 	$(call PRINT_NOTICE,'Running npm install')
-	@npm install; if [ $$? -ne 0 ]; then \
+	@npm install >/dev/null; if [ $$? -ne 0 ]; then \
 		$(call PRINT_ERROR,'npm install exited with error(s)'); \
 	fi
 	$(call PRINT_OK,'npm install successfull')
 
+.PHONY: test
+test: check npm_install
+	$(call PRINT_NOTICE,'Running npm test')
+	$(shell npm test)
+
 .PHONY: app
 app: npm_install
 	$(call PRINT_NOTICE,'Running gulp')
-	@gulp; if [ $$? -ne 0 ]; then \
+	@gulp >/dev/null; if [ $$? -ne 0 ]; then \
 		$(call PRINT_ERROR,'gulp exited with error(s)'); \
 	fi
 	$(call PRINT_OK,'gulp executed successfully')
@@ -115,7 +129,7 @@ ifneq ($(filter $(BUILD),darwin),)
 		mv Yakyak.app/Contents/MacOS/Electron Yakyak.app/Contents/MacOS/Yakyak; \
 		cp -R ../../app Yakyak.app/Contents/Resources/app; \
 		cp ../../src/icons/atom.icns Yakyak.app/Contents/Resources/atom.icns; \
-		zip -r ../yakyak-osx.app.zip Yakyak.app; \
+		zip -r ../yakyak-osx.app.zip Yakyak.app >/dev/null; \
 	}
 else
 	$(call PRINT_WARNING,Not building for darwin/OS/OSX)
@@ -123,12 +137,12 @@ endif
 
 .PHONY: deploy-win32-ia32
 deploy-win32-ia32: deploy-electron check app
-ifneq ($(filter $(BUILD),windows),)
+ifneq ($(filter $(BUILD),win32),)
 	$(call PRINT_NOTICE,Building for win32-ia32)
 	@cd dist/ && { \
 		mv win32-ia32/electron.exe win32-ia32/yakyak.exe; \
 		cp -R ../app win32-ia32/resources/app; \
-		zip -r yayak-win32-ia32.zip win32-ia32; \
+		zip -r yayak-win32-ia32.zip win32-ia32 >/dev/null; \
 	}
 else
 	$(call PRINT_WARNING,Not building for win32-ia32)
@@ -136,12 +150,12 @@ endif
 
 .PHONY: deploy-win32-x64
 deploy-win32-x64: deploy-electron check app
-ifneq ($(filter $(BUILD),windows),)
+ifneq ($(filter $(BUILD),win32),)
 	$(call PRINT_NOTICE,Building for win32-x64)
 	@cd dist/ && { \
 		mv win32-x64/electron.exe win32-x64/yakyak.exe; \
 		cp -R ../app win32-x64/resources/app; \
-		zip -r yayak-win32-x64.zip win32-x64; \
+		zip -r yayak-win32-x64.zip win32-x64 >/dev/null; \
 	}
 else
 	$(call PRINT_WARNING,Not building for win32-x64)
@@ -154,7 +168,7 @@ ifneq ($(filter $(BUILD),linux),)
 	@cd dist/ && { \
 		mv linux-ia32/electron linux-ia32/yakyak; \
 		cp -R ../app linux-ia32/resources/app; \
-		zip -r yayak-linux-ia32.zip linux-ia32; \
+		zip -r yayak-linux-ia32.zip linux-ia32 >/dev/null; \
 	}
 else
 	$(call PRINT_WARNING,Not building for linux-ia32)
@@ -167,7 +181,7 @@ ifneq ($(filter $(BUILD),linux),)
 	@cd dist/ && { \
 		mv linux-x64/electron linux-x64/yakyak; \
 		cp -R ../app linux-x64/resources/app; \
-		zip -r yayak-linux-x64.zip linux-x64; \
+		zip -r yayak-linux-x64.zip linux-x64 >/dev/null; \
 	}
 else
 	$(call PRINT_WARNING,Not building for linux-x64)
@@ -175,13 +189,16 @@ endif
 
 .PHONY: mostlyclean
 mostlyclean:
-	rm -rf app/
-	rm -rf dist/*/*
+	$(call PRINT_NOTICE,Removing most build data)
+	@rm -rf app/
+	@rm -rf dist/*/*
 
 .PHONY: clean
 clean:
-	rm -rf app/
-	rm -rf dist/
+	$(call PRINT_NOTICE,Removing build data)
+	@rm -rf app/
+	@rm -rf dist/
+	@rm -rf node_modules/
 
 .PHONY: check
 check: check-os check-curl check-unzip check-sed check-npm
